@@ -1,0 +1,166 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --gold: #d4af37;
+  --gold-light: #f0d060;
+  --bg-dark: #06040e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: #f5f0e8;
+  font-family: 'EB Garamond', Georgia, serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── Fonts ─── */
+.font-cinzel { font-family: 'Cinzel', Georgia, serif; }
+.font-garamond { font-family: 'EB Garamond', Georgia, serif; }
+
+/* ─── Stars background ─── */
+.stars-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 0%, rgba(30, 10, 60, 0.6) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 80% 20%, rgba(60, 20, 100, 0.3) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 20% 80%, rgba(40, 10, 80, 0.25) 0%, transparent 60%),
+    #06040e;
+}
+
+.stars-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.7) 0%, transparent 50%),
+    radial-gradient(1px 1px at 25% 35%, rgba(255,255,255,0.5) 0%, transparent 50%),
+    radial-gradient(1.5px 1.5px at 40% 8%, rgba(255,255,255,0.6) 0%, transparent 50%),
+    radial-gradient(1px 1px at 55% 50%, rgba(255,255,255,0.4) 0%, transparent 50%),
+    radial-gradient(1px 1px at 70% 22%, rgba(255,255,255,0.55) 0%, transparent 50%),
+    radial-gradient(1.5px 1.5px at 85% 65%, rgba(255,255,255,0.5) 0%, transparent 50%),
+    radial-gradient(1px 1px at 15% 70%, rgba(255,255,255,0.45) 0%, transparent 50%),
+    radial-gradient(1px 1px at 90% 10%, rgba(255,255,255,0.6) 0%, transparent 50%),
+    radial-gradient(1px 1px at 35% 85%, rgba(255,255,255,0.4) 0%, transparent 50%),
+    radial-gradient(1.5px 1.5px at 60% 78%, rgba(255,255,255,0.5) 0%, transparent 50%),
+    radial-gradient(1px 1px at 5% 45%, rgba(255,255,255,0.35) 0%, transparent 50%),
+    radial-gradient(1px 1px at 78% 42%, rgba(255,255,255,0.45) 0%, transparent 50%),
+    radial-gradient(1px 1px at 48% 62%, rgba(212,175,55,0.4) 0%, transparent 50%),
+    radial-gradient(1px 1px at 92% 88%, rgba(255,255,255,0.3) 0%, transparent 50%),
+    radial-gradient(1px 1px at 20% 55%, rgba(255,255,255,0.4) 0%, transparent 50%);
+}
+
+/* ─── Cards ─── */
+.mystic-card {
+  background: rgba(13, 8, 25, 0.88);
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.mystic-card-hover {
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.mystic-card-hover:hover {
+  border-color: rgba(212, 175, 55, 0.45);
+  box-shadow: 0 0 30px rgba(212, 175, 55, 0.08);
+}
+
+/* ─── Gold gradient text ─── */
+.gold-text {
+  background: linear-gradient(135deg, #a08020 0%, #d4af37 40%, #f0d060 60%, #d4af37 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 4s linear infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+/* ─── Gold divider ─── */
+.gold-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212,175,55,0.4), transparent);
+}
+
+/* ─── Spinner rings for loading ─── */
+.ring-spin {
+  animation: spin 12s linear infinite;
+}
+.ring-spin-rev {
+  animation: spin 8s linear infinite reverse;
+}
+.ring-spin-med {
+  animation: spin 20s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Input styling override ─── */
+input[type="date"],
+input[type="time"] {
+  color-scheme: dark;
+}
+
+input:focus {
+  outline: none;
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #06040e;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(212,175,55,0.3);
+  border-radius: 3px;
+}
+
+/* ─── Streaming cursor blink ─── */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ─── Button gold gradient ─── */
+.btn-gold {
+  background: linear-gradient(135deg, #a08020, #d4af37, #f0d060, #d4af37);
+  background-size: 200% auto;
+  color: #0d0819;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  transition: opacity 0.2s, transform 0.15s, background-position 0.4s;
+}
+.btn-gold:hover {
+  opacity: 0.92;
+  background-position: right center;
+}
+.btn-gold:active {
+  transform: scale(0.97);
+}

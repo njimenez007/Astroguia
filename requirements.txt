@@ -1,0 +1,12 @@
+requests
+python-dotenv
+pytz
+ephem
+timezonefinder
+geopy
+fastapi
+uvicorn[standard]
+anthropic
+# pyswisseph  # True Node exacto + Sripati exacto
+#              En Windows: instalar Microsoft C++ Build Tools primero
+#              https://visualstudio.microsoft.com/visual-cpp-build-tools/

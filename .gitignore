@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+.venv/
+venv/
+*.egg-info/
+
+# Node
+web/node_modules/
+web/.next/
+web/.env.local
+
+# Secrets — NEVER commit
+.env
+*.key
+*.pem
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+/tmp/
+
+# Claude Code internal memory
+.claude/
+
+# Ephemeral test outputs
+test_output/
