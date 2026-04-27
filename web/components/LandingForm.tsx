@@ -12,9 +12,10 @@ export interface FormData {
 interface Props {
   onSubmit: (data: FormData) => void
   error?: string | null
+  onBack?: () => void
 }
 
-export default function LandingForm({ onSubmit, error }: Props) {
+export default function LandingForm({ onSubmit, error, onBack }: Props) {
   const [form, setForm] = useState<FormData>({ nombre: '', fecha: '', hora: '', ciudad: '' })
   const [focused, setFocused] = useState<string | null>(null)
 
@@ -37,6 +38,14 @@ export default function LandingForm({ onSubmit, error }: Props) {
 
       {/* ── Header ── */}
       <div className="text-center mb-10 animate-fade-in">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="font-cinzel text-[10px] tracking-[0.35em] text-white/30 hover:text-gold-DEFAULT/60 uppercase transition-colors mb-6 block mx-auto"
+          >
+            ← Volver
+          </button>
+        )}
         <div className="text-4xl mb-4 tracking-widest text-gold-DEFAULT/60 select-none">
           ☽ &nbsp; ✦ &nbsp; ☾
         </div>

@@ -10,12 +10,16 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Ensure project root is importable
 ROOT = Path(__file__).parent.parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from prompts.gancho import SYSTEM, prepare_context  # noqa: E402
+from prompts.gancho import (  # noqa: E402
+    SYSTEM_INDIVIDUAL,
+    SYSTEM_PAREJA,
+    prepare_context_individual,
+    prepare_context_pareja,
+)
 
 _client: AsyncAnthropic | None = None
 
@@ -31,31 +35,40 @@ def _get_client() -> AsyncAnthropic:
 
 
 async def stream_hook(
-    birth_data: dict, nombre: str
+    birth_data: dict,
+    nombre: str,
+    tipo: str = "individual",
+    birth_data2: dict | None = None,
+    nombre2: str | None = None,
 ) -> AsyncGenerator[str, None]:
     """
     Async generator que emite Server-Sent Events mientras Claude genera.
 
-    Eventos emitidos:
-      data: {"e":"c","t":"<chunk>"}   — fragmento de texto de Claude
+    Flujo individual: 2 revelaciones (personalidad + predicción).
+    Flujo pareja:     1 revelación (compatibilidad).
+
+    Eventos:
+      data: {"e":"c","t":"<chunk>"}   — fragmento de texto
       data: {"e":"done"}              — stream completo
       data: {"e":"err","m":"<msg>"}   — error
     """
     client = _get_client()
-    system = SYSTEM.format(nombre=nombre)
-    context = prepare_context(birth_data, nombre)
+
+    if tipo == "pareja" and birth_data2 and nombre2:
+        system = SYSTEM_PAREJA
+        context = prepare_context_pareja(birth_data, nombre, birth_data2, nombre2)
+        user_msg = f"Genera la revelación de compatibilidad para esta pareja:\n\n{context}"
+    else:
+        system = SYSTEM_INDIVIDUAL.format(nombre=nombre)
+        context = prepare_context_individual(birth_data, nombre)
+        user_msg = f"Genera las 2 revelaciones para esta carta:\n\n{context}"
 
     try:
         async with client.messages.stream(
             model="claude-sonnet-4-6",
             max_tokens=4000,
             system=system,
-            messages=[
-                {
-                    "role": "user",
-                    "content": f"Genera las 4 revelaciones para esta carta:\n\n{context}",
-                }
-            ],
+            messages=[{"role": "user", "content": user_msg}],
         ) as stream:
             async for chunk in stream.text_stream:
                 payload = json.dumps({"e": "c", "t": chunk}, ensure_ascii=False)

@@ -2,11 +2,13 @@
 
 import { useRef, useState } from 'react'
 import LandingForm, { FormData } from '@/components/LandingForm'
+import ParejaForm, { ParejaData } from '@/components/ParejaForm'
 import LoadingScreen from '@/components/LoadingScreen'
 import Revelaciones from '@/components/Revelaciones'
 import Upsell from '@/components/Upsell'
 
-type Screen = 'landing' | 'loading' | 'revelaciones' | 'upsell'
+type Tipo = 'individual' | 'pareja'
+type Screen = 'selector' | 'form' | 'loading' | 'revelaciones' | 'upsell'
 
 export interface RevStream {
   titulo: string
@@ -57,16 +59,25 @@ const API_URL =
   'http://localhost:8000'
 
 export default function Home() {
-  const [screen, setScreen] = useState<Screen>('landing')
+  const [screen, setScreen] = useState<Screen>('selector')
+  const [tipo, setTipo] = useState<Tipo>('individual')
   const [formData, setFormData] = useState<FormData | null>(null)
+  const [parejaData, setParejaData] = useState<ParejaData | null>(null)
   const [revs, setRevs] = useState<RevStream[]>([])
   const [streaming, setStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const transitionedRef = useRef(false)
 
-  const handleSubmit = async (data: FormData) => {
-    setFormData(data)
+  const loadingNombre =
+    tipo === 'pareja' && parejaData
+      ? `${parejaData.nombre} y ${parejaData.pareja_nombre}`
+      : formData?.nombre ?? ''
+
+  const revelacionNombre =
+    tipo === 'pareja' ? (parejaData?.nombre ?? '') : (formData?.nombre ?? '')
+
+  const runStream = async (body: object) => {
     setError(null)
     setRevs([])
     setStreaming(true)
@@ -77,7 +88,7 @@ export default function Home() {
       const resp = await fetch(`${API_URL}/api/gancho`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(body),
       })
 
       if (!resp.ok) {
@@ -128,10 +139,20 @@ export default function Home() {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error desconocido'
       setError(msg)
-      setScreen('landing')
+      setScreen('form')
     } finally {
       setStreaming(false)
     }
+  }
+
+  const handleIndividualSubmit = async (data: FormData) => {
+    setFormData(data)
+    await runStream({ tipo: 'individual', ...data })
+  }
+
+  const handleParejaSubmit = async (data: ParejaData) => {
+    setParejaData(data)
+    await runStream({ tipo: 'pareja', ...data })
   }
 
   return (
@@ -139,26 +160,102 @@ export default function Home() {
       <div className="stars-bg" aria-hidden="true" />
 
       <main className="relative z-10 min-h-screen">
-        {screen === 'landing' && (
-          <LandingForm onSubmit={handleSubmit} error={error} />
+
+        {/* ── Selector ── */}
+        {screen === 'selector' && (
+          <div className="min-h-screen flex flex-col items-center justify-center px-4 py-16 relative z-10">
+            <div className="text-center mb-12 animate-fade-in">
+              <div className="text-3xl mb-4 tracking-widest text-gold-DEFAULT/50 select-none">
+                ☽ · ✦ · ☾
+              </div>
+              <h1 className="font-cinzel text-4xl md:text-5xl gold-text tracking-wide mb-3">
+                AstroGuía
+              </h1>
+              <p className="font-cinzel text-[10px] tracking-[0.45em] text-gold-DEFAULT/40 uppercase mb-6">
+                Jyotish · Astrología Védica
+              </p>
+              <div className="gold-divider" />
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-5 w-full max-w-2xl">
+              <button
+                onClick={() => { setTipo('individual'); setScreen('form') }}
+                className="mystic-card mystic-card-hover rounded-2xl p-8 flex flex-col items-center text-center border border-gold-DEFAULT/25 shadow-[0_0_32px_rgba(212,175,55,0.06)] group transition-all duration-300"
+              >
+                <div className="text-5xl mb-5 select-none group-hover:scale-110 transition-transform duration-300">🌟</div>
+                <h2 className="font-cinzel text-xl text-gold-DEFAULT tracking-wide mb-2">
+                  Conoce tu carta
+                </h2>
+                <p className="text-white/45 font-garamond text-base leading-relaxed">
+                  Descubre quién eres en esencia
+                </p>
+                <div className="mt-6 font-cinzel text-[9px] tracking-[0.35em] text-gold-DEFAULT/40 uppercase">
+                  Carta védica individual ✦
+                </div>
+              </button>
+
+              <button
+                onClick={() => { setTipo('pareja'); setScreen('form') }}
+                className="mystic-card mystic-card-hover rounded-2xl p-8 flex flex-col items-center text-center border border-rose-400/25 shadow-[0_0_32px_rgba(244,63,94,0.06)] group transition-all duration-300"
+              >
+                <div className="text-5xl mb-5 select-none group-hover:scale-110 transition-transform duration-300">💫</div>
+                <h2 className="font-cinzel text-xl tracking-wide mb-2" style={{ color: '#fda4af' }}>
+                  Conoce tu compatibilidad
+                </h2>
+                <p className="text-white/45 font-garamond text-base leading-relaxed">
+                  Descubre cómo el cosmos ve tu relación
+                </p>
+                <div className="mt-6 font-cinzel text-[9px] tracking-[0.35em] uppercase" style={{ color: 'rgba(253,164,175,0.4)' }}>
+                  Kundali Matching ✦
+                </div>
+              </button>
+            </div>
+
+            <p className="mt-12 text-white/20 text-sm font-garamond text-center">
+              Dario Jiménez Medina — Jyotish · Bogotá, Colombia
+            </p>
+          </div>
         )}
 
+        {/* ── Form — individual ── */}
+        {screen === 'form' && tipo === 'individual' && (
+          <LandingForm
+            onSubmit={handleIndividualSubmit}
+            error={error}
+            onBack={() => { setError(null); setScreen('selector') }}
+          />
+        )}
+
+        {/* ── Form — pareja ── */}
+        {screen === 'form' && tipo === 'pareja' && (
+          <ParejaForm
+            onSubmit={handleParejaSubmit}
+            error={error}
+            onBack={() => { setError(null); setScreen('selector') }}
+          />
+        )}
+
+        {/* ── Loading ── */}
         {screen === 'loading' && (
-          <LoadingScreen nombre={formData?.nombre ?? ''} />
+          <LoadingScreen nombre={loadingNombre} tipo={tipo} />
         )}
 
+        {/* ── Revelaciones ── */}
         {screen === 'revelaciones' && (
           <Revelaciones
-            nombre={formData?.nombre ?? ''}
+            nombre={revelacionNombre}
             revs={revs}
             streaming={streaming}
+            tipo={tipo}
             onCTA={() => setScreen('upsell')}
           />
         )}
 
+        {/* ── Upsell ── */}
         {screen === 'upsell' && (
-          <Upsell nombre={formData?.nombre ?? ''} />
+          <Upsell nombre={revelacionNombre} tipo={tipo} />
         )}
+
       </main>
     </>
   )

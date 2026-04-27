@@ -36,28 +36,43 @@ async def add_cors(request: Request, call_next):
 
 
 class GanchoRequest(BaseModel):
+    tipo: str = "individual"   # "individual" | "pareja"
     nombre: str
-    fecha: str   # YYYY-MM-DD
-    hora: str    # HH:MM
+    fecha: str                 # YYYY-MM-DD
+    hora: str                  # HH:MM
     ciudad: str
+    # Solo para tipo="pareja"
+    pareja_nombre: str | None = None
+    pareja_fecha: str | None = None
+    pareja_hora: str | None = None
+    pareja_ciudad: str | None = None
 
 
 @app.post("/api/gancho")
 async def gancho(req: GanchoRequest) -> StreamingResponse:
     """
-    Calcula la carta védica con get_birth_data() y hace streaming
-    de las 4 revelaciones generadas por Claude vía Server-Sent Events.
+    Calcula la carta védica y hace streaming de revelaciones vía SSE.
+    individual: 2 revelaciones (personalidad + predicción).
+    pareja:     1 revelación de compatibilidad (requiere datos de los dos).
     """
     try:
-        # get_birth_data es sincrónico — lo corremos en un thread
         birth_data = await asyncio.to_thread(
             get_birth_data, req.nombre, req.fecha, req.hora, req.ciudad
         )
     except Exception as ex:
         raise HTTPException(status_code=500, detail=f"Error calculando carta: {ex}")
 
+    birth_data2 = None
+    if req.tipo == "pareja" and req.pareja_nombre and req.pareja_fecha and req.pareja_hora and req.pareja_ciudad:
+        try:
+            birth_data2 = await asyncio.to_thread(
+                get_birth_data, req.pareja_nombre, req.pareja_fecha, req.pareja_hora, req.pareja_ciudad
+            )
+        except Exception as ex:
+            raise HTTPException(status_code=500, detail=f"Error calculando carta de pareja: {ex}")
+
     return StreamingResponse(
-        stream_hook(birth_data, req.nombre),
+        stream_hook(birth_data, req.nombre, req.tipo, birth_data2, req.pareja_nombre),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
