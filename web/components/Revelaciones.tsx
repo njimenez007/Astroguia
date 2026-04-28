@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import type { RevStream } from '@/app/page'
+import MiniPregunta from './MiniPregunta'
 
 type Tipo = 'individual' | 'pareja'
 
@@ -12,6 +13,8 @@ interface Props {
   tipo: Tipo
   onCTA: () => void
   onBack?: () => void
+  apiUrl?: string
+  requestBody?: Record<string, string>
 }
 
 const CARD_META_INDIVIDUAL = [
@@ -102,7 +105,7 @@ function RevCard({
   )
 }
 
-export default function Revelaciones({ nombre, revs, streaming, tipo, onCTA, onBack }: Props) {
+export default function Revelaciones({ nombre, revs, streaming, tipo, onCTA, onBack, apiUrl, requestBody }: Props) {
   const [ctaVisible, setCtaVisible] = useState(false)
   const expectedCount = tipo === 'pareja' ? 1 : 2
   const cardMeta = tipo === 'pareja' ? CARD_META_PAREJA : CARD_META_INDIVIDUAL
@@ -201,6 +204,10 @@ export default function Revelaciones({ nombre, revs, streaming, tipo, onCTA, onB
             <span>·</span>
             <span>Dario Jiménez Medina — Jyotish</span>
           </div>
+
+          {apiUrl && requestBody && (
+            <MiniPregunta apiUrl={apiUrl} requestBody={requestBody} tipo={tipo} />
+          )}
         </div>
 
       </div>

@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from src.api.engine import get_birth_data
 from src.api.claude_hook import stream_hook
 from src.api.claude_carta import generate_carta_astral
+from src.api.claude_pregunta import stream_pregunta
 
 app = FastAPI(title="AstroGuía API", version="0.1.0")
 
@@ -105,6 +106,52 @@ async def carta_completa(req: CartaRequest) -> StreamingResponse:
 
     return StreamingResponse(
         generate_carta_astral(birth_data, req.nombre),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
+
+
+class PreguntaRequest(BaseModel):
+    tipo: str = "individual"
+    pregunta: str
+    nombre: str
+    fecha: str
+    hora: str
+    ciudad: str
+    pareja_nombre: str | None = None
+    pareja_fecha: str | None = None
+    pareja_hora: str | None = None
+    pareja_ciudad: str | None = None
+
+
+@app.post("/api/pregunta")
+async def pregunta(req: PreguntaRequest) -> StreamingResponse:
+    """Responde una pregunta específica del consultante usando el mini-prompt correcto."""
+    try:
+        birth_data = await asyncio.to_thread(
+            get_birth_data, req.nombre, req.fecha, req.hora, req.ciudad
+        )
+    except Exception as ex:
+        raise HTTPException(status_code=500, detail=f"Error calculando carta: {ex}")
+
+    birth_data2 = None
+    if req.tipo == "pareja" and req.pareja_nombre and req.pareja_fecha and req.pareja_hora and req.pareja_ciudad:
+        try:
+            birth_data2 = await asyncio.to_thread(
+                get_birth_data, req.pareja_nombre, req.pareja_fecha, req.pareja_hora, req.pareja_ciudad
+            )
+        except Exception as ex:
+            raise HTTPException(status_code=500, detail=f"Error calculando carta de pareja: {ex}")
+
+    return StreamingResponse(
+        stream_pregunta(
+            req.pregunta, req.tipo, birth_data, req.nombre,
+            birth_data2, req.pareja_nombre,
+        ),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

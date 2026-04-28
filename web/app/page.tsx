@@ -249,6 +249,12 @@ export default function Home() {
             tipo={tipo}
             onCTA={() => setScreen('upsell')}
             onBack={() => setScreen('selector')}
+            apiUrl={API_URL}
+            requestBody={
+              tipo === 'pareja' && parejaData
+                ? { tipo: 'pareja', ...parejaData }
+                : { tipo: 'individual', ...(formData ?? { nombre: '', fecha: '', hora: '', ciudad: '' }) }
+            }
           />
         )}
 
