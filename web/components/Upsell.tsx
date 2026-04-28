@@ -43,9 +43,10 @@ const PRODUCT_PAREJA = {
 interface Props {
   nombre: string
   tipo?: Tipo
+  onBack?: () => void
 }
 
-export default function Upsell({ nombre, tipo = 'individual' }: Props) {
+export default function Upsell({ nombre, tipo = 'individual', onBack }: Props) {
   const openWhatsApp = (msg: string) => {
     const url = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`
     window.open(url, '_blank', 'noopener')
@@ -58,6 +59,14 @@ export default function Upsell({ nombre, tipo = 'individual' }: Props) {
         <div className="max-w-lg mx-auto">
 
           <div className="text-center mb-10 animate-fade-in">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="font-cinzel text-[11px] tracking-[0.3em] text-white/55 hover:text-gold-DEFAULT transition-colors mb-6 block mx-auto border border-white/15 hover:border-gold-DEFAULT/40 px-4 py-2 rounded-full"
+              >
+                ← Inicio
+              </button>
+            )}
             <div className="text-3xl mb-3 tracking-widest select-none" style={{ color: 'rgba(244,63,94,0.5)' }}>
               ♡ &nbsp; ✦ &nbsp; ♡
             </div>
@@ -116,6 +125,14 @@ export default function Upsell({ nombre, tipo = 'individual' }: Props) {
       <div className="max-w-3xl mx-auto">
 
         <div className="text-center mb-12 animate-fade-in">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="font-cinzel text-[11px] tracking-[0.3em] text-white/55 hover:text-gold-DEFAULT transition-colors mb-6 block mx-auto border border-white/15 hover:border-gold-DEFAULT/40 px-4 py-2 rounded-full"
+            >
+              ← Inicio
+            </button>
+          )}
           <div className="text-3xl mb-3 tracking-widest text-gold-DEFAULT/50 select-none">✦ &nbsp; ✦ &nbsp; ✦</div>
           <h1 className="font-cinzel text-3xl md:text-4xl gold-text tracking-wide mb-2">
             Tu Lectura Completa, {nombre}

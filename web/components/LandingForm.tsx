@@ -41,7 +41,7 @@ export default function LandingForm({ onSubmit, error, onBack }: Props) {
         {onBack && (
           <button
             onClick={onBack}
-            className="font-cinzel text-[10px] tracking-[0.35em] text-white/30 hover:text-gold-DEFAULT/60 uppercase transition-colors mb-6 block mx-auto"
+            className="font-cinzel text-[11px] tracking-[0.3em] text-white/55 hover:text-gold-DEFAULT transition-colors mb-6 block mx-auto border border-white/15 hover:border-gold-DEFAULT/40 px-4 py-2 rounded-full"
           >
             ← Volver
           </button>

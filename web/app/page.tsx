@@ -248,12 +248,17 @@ export default function Home() {
             streaming={streaming}
             tipo={tipo}
             onCTA={() => setScreen('upsell')}
+            onBack={() => setScreen('selector')}
           />
         )}
 
         {/* ── Upsell ── */}
         {screen === 'upsell' && (
-          <Upsell nombre={revelacionNombre} tipo={tipo} />
+          <Upsell
+            nombre={revelacionNombre}
+            tipo={tipo}
+            onBack={() => setScreen('selector')}
+          />
         )}
 
       </main>

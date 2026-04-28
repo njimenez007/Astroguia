@@ -11,6 +11,7 @@ interface Props {
   streaming: boolean
   tipo: Tipo
   onCTA: () => void
+  onBack?: () => void
 }
 
 const CARD_META_INDIVIDUAL = [
@@ -101,7 +102,7 @@ function RevCard({
   )
 }
 
-export default function Revelaciones({ nombre, revs, streaming, tipo, onCTA }: Props) {
+export default function Revelaciones({ nombre, revs, streaming, tipo, onCTA, onBack }: Props) {
   const [ctaVisible, setCtaVisible] = useState(false)
   const expectedCount = tipo === 'pareja' ? 1 : 2
   const cardMeta = tipo === 'pareja' ? CARD_META_PAREJA : CARD_META_INDIVIDUAL
@@ -135,6 +136,14 @@ export default function Revelaciones({ nombre, revs, streaming, tipo, onCTA }: P
 
         {/* Header */}
         <div className="text-center mb-10 animate-fade-in">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="font-cinzel text-[11px] tracking-[0.3em] text-white/55 hover:text-gold-DEFAULT transition-colors mb-6 block mx-auto border border-white/15 hover:border-gold-DEFAULT/40 px-4 py-2 rounded-full"
+            >
+              ← Inicio
+            </button>
+          )}
           <div className="text-3xl mb-3 tracking-widest select-none"
             style={{ color: tipo === 'pareja' ? 'rgba(244,63,94,0.5)' : 'rgba(212,175,55,0.5)' }}>
             {tipo === 'pareja' ? '♡ · ✦ · ♡' : '☽ · ✦ · ☾'}
