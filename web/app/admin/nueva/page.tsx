@@ -141,10 +141,19 @@ export default function NuevaPage() {
     const ctrl = new AbortController()
     abortRef.current = ctrl
 
+    // Fetch custom system prompt if one has been saved for this tipo
+    const supabase = createClient()
+    const { data: promptRow } = await supabase
+      .from('prompts')
+      .select('contenido')
+      .eq('tipo', tipo)
+      .single()
+    const customSystem = promptRow?.contenido || null
+
     const body =
       tipo === 'compatibilidad'
-        ? { nombre, fecha, hora, ciudad, pareja_nombre: parejaNombre, pareja_fecha: parejaFecha, pareja_hora: parejaHora, pareja_ciudad: parejaCiudad }
-        : { nombre, fecha, hora, ciudad }
+        ? { nombre, fecha, hora, ciudad, pareja_nombre: parejaNombre, pareja_fecha: parejaFecha, pareja_hora: parejaHora, pareja_ciudad: parejaCiudad, custom_system: customSystem }
+        : { nombre, fecha, hora, ciudad, custom_system: customSystem }
 
     const endpoint = TIPO_META[tipo].endpoint
 

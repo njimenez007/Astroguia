@@ -38,13 +38,17 @@ def _get_client() -> AsyncAnthropic:
 async def generate_compatibilidad(
     birth_data1: dict, nombre1: str,
     birth_data2: dict, nombre2: str,
+    custom_system: str | None = None,
 ) -> AsyncGenerator[str, None]:
     """
     Genera la Lectura de Compatibilidad (5 bloques) vía SSE streaming.
     Eventos: block_start → c → block_done → done | err
     """
     client = _get_client()
-    system = SYSTEM.format(nombre1=nombre1, nombre2=nombre2)
+    if custom_system:
+        system = custom_system.replace('{nombre1}', nombre1).replace('{nombre2}', nombre2)
+    else:
+        system = SYSTEM.format(nombre1=nombre1, nombre2=nombre2)
     ctx = prepare_compatibilidad_context(birth_data1, nombre1, birth_data2, nombre2)
     messages: list[dict] = []
 

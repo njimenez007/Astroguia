@@ -90,6 +90,7 @@ class CartaRequest(BaseModel):
     fecha: str   # YYYY-MM-DD
     hora: str    # HH:MM
     ciudad: str
+    custom_system: str | None = None
 
 
 @app.post("/api/carta-completa")
@@ -107,7 +108,7 @@ async def carta_completa(req: CartaRequest) -> StreamingResponse:
         raise HTTPException(status_code=500, detail=f"Error calculando carta: {ex}")
 
     return StreamingResponse(
-        generate_carta_astral(birth_data, req.nombre),
+        generate_carta_astral(birth_data, req.nombre, req.custom_system),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -168,6 +169,7 @@ class PrediccionesRequest(BaseModel):
     fecha: str
     hora: str
     ciudad: str
+    custom_system: str | None = None
 
 
 @app.post("/api/predicciones")
@@ -181,7 +183,7 @@ async def predicciones(req: PrediccionesRequest) -> StreamingResponse:
         raise HTTPException(status_code=500, detail=f"Error calculando carta: {ex}")
 
     return StreamingResponse(
-        generate_predicciones(birth_data, req.nombre),
+        generate_predicciones(birth_data, req.nombre, req.custom_system),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -200,6 +202,7 @@ class CompatibilidadRequest(BaseModel):
     pareja_fecha: str
     pareja_hora: str
     pareja_ciudad: str
+    custom_system: str | None = None
 
 
 @app.post("/api/compatibilidad-completa")
@@ -220,7 +223,7 @@ async def compatibilidad_completa(req: CompatibilidadRequest) -> StreamingRespon
         raise HTTPException(status_code=500, detail=f"Error calculando carta de persona 2: {ex}")
 
     return StreamingResponse(
-        generate_compatibilidad(birth_data1, req.nombre, birth_data2, req.pareja_nombre),
+        generate_compatibilidad(birth_data1, req.nombre, birth_data2, req.pareja_nombre, req.custom_system),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

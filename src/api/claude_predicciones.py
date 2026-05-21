@@ -36,14 +36,17 @@ def _get_client() -> AsyncAnthropic:
 
 
 async def generate_predicciones(
-    birth_data: dict, nombre: str
+    birth_data: dict, nombre: str, custom_system: str | None = None
 ) -> AsyncGenerator[str, None]:
     """
     Genera la Lectura de Predicciones (5 bloques) vía SSE streaming.
     Eventos: block_start → c → block_done → done | err
     """
     client = _get_client()
-    system = SYSTEM.format(nombre=nombre)
+    if custom_system:
+        system = custom_system.replace('{nombre}', nombre)
+    else:
+        system = SYSTEM.format(nombre=nombre)
     ctx = prepare_predicciones_context(birth_data, nombre)
     messages: list[dict] = []
 

@@ -36,7 +36,7 @@ def _get_client() -> AsyncAnthropic:
 
 
 async def generate_carta_astral(
-    birth_data: dict, nombre: str
+    birth_data: dict, nombre: str, custom_system: str | None = None
 ) -> AsyncGenerator[str, None]:
     """
     Async generator que corre los 5 bloques de la Carta Astral secuencialmente.
@@ -50,7 +50,10 @@ async def generate_carta_astral(
       {"e":"err","m":"msg"}                        — error
     """
     client = _get_client()
-    system = SYSTEM.format(nombre=nombre)
+    if custom_system:
+        system = custom_system.replace('{nombre}', nombre)
+    else:
+        system = SYSTEM.format(nombre=nombre)
     ctx = prepare_carta_context(birth_data, nombre)
 
     # Historial crece con cada bloque para mantener coherencia y evitar repetición
