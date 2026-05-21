@@ -100,6 +100,23 @@ OWN = {
 NAISARGIKA = {"Sol": 60.0, "Luna": 51.43, "Marte": 17.14, "Mercurio": 25.71, "Júpiter": 34.29, "Venus": 42.86, "Saturno": 8.57}
 DIG_BALA_HOUSE = {"Sol": 9, "Marte": 9, "Júpiter": 0, "Mercurio": 0, "Venus": 3, "Luna": 3, "Saturno": 6}
 
+# Amistades naturales (Parashara): (amigos, neutrales, enemigos)
+NAT_FRIEND: dict[str, tuple[list, list, list]] = {
+    "Sol":      (["Luna", "Marte", "Júpiter"],               ["Mercurio"],                            ["Venus", "Saturno"]),
+    "Luna":     (["Sol", "Mercurio"],                        ["Marte", "Júpiter", "Venus", "Saturno"], []),
+    "Marte":    (["Sol", "Luna", "Júpiter"],                 ["Venus", "Saturno"],                    ["Mercurio"]),
+    "Mercurio": (["Sol", "Venus"],                           ["Marte", "Júpiter", "Saturno"],          ["Luna"]),
+    "Júpiter":  (["Sol", "Luna", "Marte"],                   ["Saturno"],                              ["Mercurio", "Venus"]),
+    "Venus":    (["Mercurio", "Saturno"],                    ["Marte", "Júpiter"],                     ["Sol", "Luna"]),
+    "Saturno":  (["Mercurio", "Venus"],                      ["Júpiter"],                              ["Sol", "Luna", "Marte"]),
+}
+
+# D30 (Trimsamsha): límites de grado → signo resultante
+# Signos impares (Aries=0,Géminis=2,Leo=4,Libra=6,Sagitario=8,Acuario=10)
+_D30_ODD  = [(5, 0), (10, 10), (18, 8), (25, 2), (30, 6)]   # Marte→Aries, Saturno→Acuario, Júpiter→Sagitario, Mercurio→Géminis, Venus→Libra
+# Signos pares (Tauro=1,Cáncer=3,Virgo=5,Escorpio=7,Capricornio=9,Piscis=11)
+_D30_EVEN = [(5, 1), (12, 5), (20, 11), (25, 9), (30, 7)]    # Venus→Tauro, Mercurio→Virgo, Júpiter→Piscis, Saturno→Capricornio, Marte→Escorpio
+
 # Planetas en orden para el motor (sin Rahu/Ketu que se calculan aparte)
 PLANET_NAMES = ["Sol", "Luna", "Marte", "Mercurio", "Júpiter", "Venus", "Saturno"]
 GENDER = {"Sol": "M", "Marte": "M", "Júpiter": "M", "Luna": "F", "Venus": "F", "Saturno": "N", "Mercurio": "N"}
@@ -743,24 +760,90 @@ def _uccha_bala(planet: str, lon: float) -> float:
     if planet not in EXALT:
         return 0.0
     exalt_sign, exalt_deg = EXALT[planet]
-    debit_sign, debit_deg = DEBIT[planet]
     exalt_lon = exalt_sign * 30 + exalt_deg
-    debit_lon = debit_sign * 30 + debit_deg
     diff = abs(lon - exalt_lon)
     if diff > 180:
         diff = 360 - diff
     return round(max(0, 60 * (1 - diff / 180)), 2)
 
 
-def _saptavargaja(planet: str, sign_d1: int, sign_d9: int, sign_d10: int) -> float:
-    """Dignidad en D1, D9, D10 — valor 0–135 (simplificado desde 7 vargas)."""
-    total = 0.0
-    weights = [3.0, 2.5, 2.0]  # D1 pesa más
-    for sign, w in zip([sign_d1, sign_d9, sign_d10], weights):
-        dig = _dignity(planet, sign)
-        pts = {"Moolatrikona": 4.5, "Propio": 3.0, "Exaltado": 3.0, "—": 1.0, "Débil": 0.5}.get(dig, 1.0)
-        total += pts * w
-    return round(total, 2)
+def _varga_sign(lon: float, division: int) -> int:
+    """Signo (0-11) del planeta en la carta varga dada (D1,D2,D3,D7,D9,D12,D30)."""
+    sign = int(lon / 30)
+    pos  = lon % 30
+    if division == 1:
+        return sign
+    if division == 2:  # Hora
+        odd = (sign % 2 == 0)   # Aries=0 → impar (1er signo)
+        return (4 if pos < 15 else 3) if odd else (3 if pos < 15 else 4)
+    if division == 3:  # Drekkana
+        return (sign + int(pos / 10) * 4) % 12
+    if division == 7:  # Saptamsha
+        part = int(pos / (30.0 / 7))
+        return (sign + part) % 12 if sign % 2 == 0 else (sign + 6 + part) % 12
+    if division == 9:  # Navamsha
+        modal = sign % 3
+        start = 0 if modal == 0 else (9 if modal == 1 else 6)
+        return (start + int(pos / (30.0 / 9))) % 12
+    if division == 12:  # Dwadashamsha
+        return (sign + int(pos / 2.5)) % 12
+    if division == 30:  # Trimsamsha
+        table = _D30_ODD if sign % 2 == 0 else _D30_EVEN
+        for limit, s in table:
+            if pos < limit:
+                return s
+        return table[-1][1]
+    # Genérico
+    return (sign * division + int(pos / (30.0 / division))) % 12
+
+
+def _sign_dignity_pts(planet: str, sign_idx: int) -> float:
+    """Shashtiamsas de dignidad para Saptavargaja Bala (Parashara clásico)."""
+    if DEBIT.get(planet, (None,))[0] == sign_idx:
+        return 0.0
+    if EXALT.get(planet, (None,))[0] == sign_idx:
+        return 45.0
+    if sign_idx in OWN.get(planet, []):
+        return 30.0
+    m = MOOL.get(planet)
+    if m and m[0] == sign_idx:
+        return 30.0
+    lord = SIGNOS[sign_idx]["reg"]
+    rels = NAT_FRIEND.get(planet, ([], [], []))
+    if lord in rels[0]: return 15.0   # amigo
+    if lord in rels[2]: return 3.75   # enemigo
+    return 7.5                         # neutral
+
+
+def _saptavargaja_bala(planet: str, lon: float) -> float:
+    """Saptavargaja Bala: dignidad en D1, D2, D3, D7, D9, D12, D30."""
+    return round(sum(_sign_dignity_pts(planet, _varga_sign(lon, d)) for d in (1, 2, 3, 7, 9, 12, 30)), 2)
+
+
+def _ojhayugma_bala(planet: str, lon: float) -> float:
+    """Ojhayugma Rashi-Amsha Bala: paridad impar/par en D1 y D9, 15 cada una."""
+    ODD_PREFER = {"Sol", "Marte", "Júpiter"}
+    is_odd_d1 = (_varga_sign(lon, 1)  % 2 == 0)   # Aries=0 → impar
+    is_odd_d9 = (_varga_sign(lon, 9)  % 2 == 0)
+    pts = 0.0
+    if planet in ODD_PREFER:
+        if is_odd_d1: pts += 15
+        if is_odd_d9: pts += 15
+    else:
+        if not is_odd_d1: pts += 15
+        if not is_odd_d9: pts += 15
+    return pts
+
+
+def _drekkana_bala(planet: str, lon: float) -> float:
+    """Drekkana Bala: 15 si el planeta está en su drekkana de género preferido."""
+    MALE   = {"Sol", "Marte", "Júpiter"}
+    FEMALE = {"Luna", "Venus"}
+    pos = lon % 30
+    if planet in MALE   and pos < 10:         return 15.0
+    if planet in FEMALE and pos >= 20:        return 15.0
+    if planet not in (MALE | FEMALE) and 10 <= pos < 20: return 15.0
+    return 0.0
 
 
 def _kendradi_bala(casa: int) -> float:
@@ -770,7 +853,7 @@ def _kendradi_bala(casa: int) -> float:
 
 
 def _dig_bala(planet: str, planet_lon: float, asc_lon: float, mc_lon: float) -> float:
-    ic_lon = (mc_lon + 180) % 360
+    ic_lon  = (mc_lon  + 180) % 360
     dsc_lon = (asc_lon + 180) % 360
     ref = {"Sol": mc_lon, "Marte": mc_lon, "Luna": ic_lon, "Venus": ic_lon,
            "Júpiter": asc_lon, "Mercurio": asc_lon, "Saturno": dsc_lon}
@@ -788,67 +871,70 @@ def _chesta_bala(speed: float, planet: str) -> float:
     mean_speeds = {"Sol": 0.985, "Luna": 13.18, "Marte": 0.524, "Mercurio": 1.383,
                    "Júpiter": 0.083, "Venus": 1.2, "Saturno": 0.033}
     ms = mean_speeds.get(planet, 1.0)
-    if speed < 0:  # retrograde
+    if speed < 0:
         return round(max(0, 30 * (-speed / ms)), 2)
     return round(min(60, 60 * speed / ms), 2)
 
 
 def _ishta_kashta(uccha: float, chesta: float) -> tuple[float, float]:
-    ishta = round(math.sqrt(uccha * chesta), 2)
+    ishta  = round(math.sqrt(uccha * chesta), 2)
     kashta = round(math.sqrt((60 - uccha) * max(0, 60 - chesta)), 2)
     return ishta, kashta
 
 
-def _shad_bala(planets: dict, lagna_sign: int) -> list[dict]:
+def _shad_bala(planets: dict, lagna_sign: int, mc_lon: float) -> list[dict]:
     asc_lon = planets["Lagna"]["lon"]
-    mc_lon = (asc_lon + 90) % 360  # Aproximación — MC correcto requiere pyswisseph
 
     result = []
     for name in PLANET_NAMES:
-        p = planets[name]
-        lon = p["lon"]
-        sign = p["signo_idx"]
-        casa = _casa_whole_sign(sign, lagna_sign)
+        p     = planets[name]
+        lon   = p["lon"]
+        sign  = p["signo_idx"]
+        casa  = _casa_whole_sign(sign, lagna_sign)
         speed = p["speed_dia"]
 
-        d9_lon = _varga_lon(lon, 9)
-        d10_lon = _varga_lon(lon, 10)
-
-        uccha = _uccha_bala(name, lon)
-        saptav = _saptavargaja(name, sign, _sign(d9_lon), _sign(d10_lon))
+        uccha  = _uccha_bala(name, lon)
+        saptav = _saptavargaja_bala(name, lon)
+        ojhay  = _ojhayugma_bala(name, lon)
         kendra = _kendradi_bala(casa)
-        dig = _dig_bala(name, lon, asc_lon, mc_lon)
+        dreck  = _drekkana_bala(name, lon)
+        dig    = _dig_bala(name, lon, asc_lon, mc_lon)
         chesta = _chesta_bala(speed or 0, name)
-        nais = NAISARGIKA[name]
-        total = round(uccha + saptav + kendra + dig + chesta + nais, 2)
-        rupas = round(total / 60, 3)
+        nais   = NAISARGIKA[name]
+
+        sthana = round(uccha + saptav + ojhay + kendra + dreck, 2)
+        total  = round(sthana + dig + chesta + nais, 2)
+        rupas  = round(total / 60, 3)
         ishta, kashta = _ishta_kashta(uccha, chesta)
 
         result.append({
-            "planeta": name,
-            "uccha_bala": uccha,
-            "saptavargaja": saptav,
-            "kendradi": kendra,
-            "dig_bala": dig,
-            "chesta_bala": chesta,
-            "naisargika": nais,
-            "total_shashtiamsas": total,
-            "rupas": rupas,
-            "ishta_phala": ishta,
-            "kashta_phala": kashta,
+            "planeta":             name,
+            "uccha_bala":          uccha,
+            "saptavargaja":        saptav,
+            "ojhayugma":           ojhay,
+            "kendradi":            kendra,
+            "drekkana":            dreck,
+            "sthana_bala":         sthana,
+            "dig_bala":            dig,
+            "chesta_bala":         chesta,
+            "naisargika":          nais,
+            "total_shashtiamsas":  total,
+            "rupas":               rupas,
+            "ishta_phala":         ishta,
+            "kashta_phala":        kashta,
         })
 
     SHADBALA_MIN_RUPAS = {
         "Sol": 6.5, "Luna": 6.0, "Marte": 5.0,
         "Mercurio": 7.0, "Júpiter": 6.5, "Venus": 5.5, "Saturno": 5.0,
     }
-    ranked = sorted(range(len(result)), key=lambda i: result[i]["total_shashtiamsas"], reverse=True)
+    ranked  = sorted(range(len(result)), key=lambda i: result[i]["total_shashtiamsas"], reverse=True)
     rank_map = {result[i]["planeta"]: r + 1 for r, i in enumerate(ranked)}
     for item in result:
         min_r = SHADBALA_MIN_RUPAS.get(item["planeta"], 5.0)
         item["minimo_rupas"] = min_r
-        item["pct_minimo"] = round((item["rupas"] / min_r) * 100, 1)
-        item["rango"] = rank_map[item["planeta"]]
+        item["pct_minimo"]   = round((item["rupas"] / min_r) * 100, 1)
+        item["rango"]        = rank_map[item["planeta"]]
     return result
 
 
@@ -1245,8 +1331,13 @@ def get_birth_data(nombre: str, fecha: str, hora: str, ciudad: str) -> dict:
     # ── Sade Sati ─────────────────────────────────────────────────────────
     sade_sati = _sade_sati(moon_sign, jd)
 
-    # ── Shad Bala ─────────────────────────────────────────────────────────
-    shad_bala = _shad_bala(planets, lagna_sign)
+    # ── MC sidereal (necesario para Dig Bala y Bhava Sripati) ─────────────
+    asc_lon = planets["Lagna"]["lon"]
+    mc_trop = _mc_tropical(dt_utc, lat, lon)
+    mc_sid  = (mc_trop - ayanamsa) % 360
+
+    # ── Shad Bala (usa MC sidereal real, no aproximación ASC+90°) ────────────
+    shad_bala = _shad_bala(planets, lagna_sign, mc_sid)
 
     # ── Ashtakavarga ──────────────────────────────────────────────────────
     ashtak = _ashtakavarga(planets)
@@ -1263,9 +1354,6 @@ def get_birth_data(nombre: str, fecha: str, hora: str, ciudad: str) -> dict:
     moon_chart = _moon_chart(planets)
 
     # ── Bhava Sripati ─────────────────────────────────────────────────────
-    asc_lon = planets["Lagna"]["lon"]
-    mc_trop = _mc_tropical(dt_utc, lat, lon)
-    mc_sid = (mc_trop - ayanamsa) % 360
     bhava = _bhava_sripati(asc_lon, mc_sid)
 
     # ── Yogas y Mangal Dosha ──────────────────────────────────────────────

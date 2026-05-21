@@ -16,7 +16,8 @@ interface D1 {
   planetas: PlanetEntry[]
 }
 interface ShadbalaRow {
-  planeta: string; uccha_bala: number; saptavargaja: number; kendradi: number
+  planeta: string; uccha_bala: number; saptavargaja: number
+  ojhayugma: number; kendradi: number; drekkana: number; sthana_bala: number
   dig_bala: number; chesta_bala: number; naisargika: number
   total_shashtiamsas: number; rupas: number; minimo_rupas: number
   pct_minimo: number; rango: number; ishta_phala: number; kashta_phala: number
@@ -214,7 +215,10 @@ function ShadbalaTable({ data }: { data: ShadbalaRow[] }) {
             <th className={TH + ' text-left'}>Planeta</th>
             <th className={TH}>Uccha</th>
             <th className={TH}>Saptav.</th>
+            <th className={TH}>Ojhay.</th>
             <th className={TH}>Kendradi</th>
+            <th className={TH}>Dreck.</th>
+            <th className={TH + ' text-white/40'}>Sthana</th>
             <th className={TH}>Dig</th>
             <th className={TH}>Chesta</th>
             <th className={TH}>Naisarg.</th>
@@ -233,7 +237,10 @@ function ShadbalaTable({ data }: { data: ShadbalaRow[] }) {
               <td className={TD + ' text-left text-white/80'}>{row.planeta}</td>
               <td className={TD}>{row.uccha_bala.toFixed(1)}</td>
               <td className={TD}>{row.saptavargaja.toFixed(1)}</td>
-              <td className={TD}>{row.kendradi.toFixed(1)}</td>
+              <td className={TD}>{(row.ojhayugma ?? 0).toFixed(0)}</td>
+              <td className={TD}>{row.kendradi.toFixed(0)}</td>
+              <td className={TD}>{(row.drekkana ?? 0).toFixed(0)}</td>
+              <td className={TD + ' text-white/40'}>{(row.sthana_bala ?? 0).toFixed(1)}</td>
               <td className={TD}>{row.dig_bala.toFixed(1)}</td>
               <td className={TD}>{row.chesta_bala.toFixed(1)}</td>
               <td className={TD}>{row.naisargika.toFixed(2)}</td>
