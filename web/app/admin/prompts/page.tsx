@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { createClient } from '@/lib/supabase/client'
 import AdminNav from '@/components/AdminNav'
@@ -22,6 +22,7 @@ export default function PromptsPage() {
   const [savedOk, setSavedOk]       = useState(false)
   const [preview, setPreview]       = useState(false)
   const [updatedAt, setUpdatedAt]   = useState<Record<Tipo, string>>({ carta: '', predicciones: '', compatibilidad: '' })
+  const fileInputRef                = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -62,6 +63,19 @@ export default function PromptsPage() {
     }
   }
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => {
+      const text = ev.target?.result as string
+      setPrompts(prev => ({ ...prev, [tipo]: text }))
+      setPreview(false)
+    }
+    reader.readAsText(file, 'utf-8')
+    e.target.value = ''
+  }
+
   const fmtDate = (iso: string) => {
     if (!iso) return ''
     return new Date(iso).toLocaleString('es-CO', {
@@ -92,8 +106,8 @@ export default function PromptsPage() {
           </p>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-2 mb-4 flex-wrap">
+        {/* Tabs + upload */}
+        <div className="flex gap-2 mb-4 flex-wrap items-center">
           {TABS.map(tab => (
             <button
               key={tab.tipo}
@@ -107,6 +121,21 @@ export default function PromptsPage() {
               {tab.label}
             </button>
           ))}
+
+          {/* File upload button */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".md,text/markdown,text/plain"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="ml-auto font-cinzel text-[9px] tracking-[0.3em] uppercase text-white/35 hover:text-gold-DEFAULT border border-white/10 hover:border-gold-DEFAULT/30 px-4 py-2 rounded-full transition-all flex items-center gap-2"
+          >
+            <span>↑</span> Subir .md
+          </button>
         </div>
 
         {/* Last saved */}
