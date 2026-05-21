@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { createClient } from '@/lib/supabase/client'
 import AdminNav from '@/components/AdminNav'
 
@@ -154,7 +155,7 @@ export default function PromptsPage() {
           ) : preview ? (
             <div className="p-6 min-h-[60vh] overflow-y-auto prose prose-invert prose-sm max-w-none font-garamond text-white/75 leading-relaxed">
               {prompts[tipo]
-                ? <ReactMarkdown>{prompts[tipo]}</ReactMarkdown>
+                ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{prompts[tipo]}</ReactMarkdown>
                 : <p className="text-white/25 italic">Sin contenido — se usará el prompt por defecto.</p>
               }
             </div>
