@@ -15,6 +15,7 @@ const NAMES: Record<string, string> = {
 
 const NAV = [
   { href: '/admin/dashboard', label: 'Lecturas' },
+  { href: '/admin/validar',   label: 'Cartas'   },
   { href: '/admin/prompts',   label: 'Prompts'  },
   { href: '/admin/nueva',     label: 'Nueva'    },
 ]

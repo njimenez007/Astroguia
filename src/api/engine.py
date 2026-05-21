@@ -452,7 +452,9 @@ def _d1(planets: dict) -> dict:
         entry = {
             "planeta": name,
             "signo": p["signo"],
+            "signo_idx": p["signo_idx"],
             "grado": p["grado"],
+            "deg_en_signo": round(p["deg_en_signo"], 2),
             "casa": _casa_whole_sign(p["signo_idx"], lagna_sign),
             "retrograde": p["retrograde"],
             "dignidad": p["dignidad"],
@@ -460,8 +462,14 @@ def _d1(planets: dict) -> dict:
             "pada": p["nakshatra"]["pada"],
         }
         out.append(entry)
+    lp = planets["Lagna"]
     return {
-        "lagna": {"signo": planets["Lagna"]["signo"], "grado": planets["Lagna"]["grado"]},
+        "lagna": {
+            "signo": lp["signo"],
+            "signo_idx": lp["signo_idx"],
+            "grado": lp["grado"],
+            "deg_en_signo": round(lp["deg_en_signo"], 2),
+        },
         "planetas": out,
     }
 
@@ -829,6 +837,18 @@ def _shad_bala(planets: dict, lagna_sign: int) -> list[dict]:
             "ishta_phala": ishta,
             "kashta_phala": kashta,
         })
+
+    SHADBALA_MIN_RUPAS = {
+        "Sol": 6.5, "Luna": 6.0, "Marte": 5.0,
+        "Mercurio": 7.0, "Júpiter": 6.5, "Venus": 5.5, "Saturno": 5.0,
+    }
+    ranked = sorted(range(len(result)), key=lambda i: result[i]["total_shashtiamsas"], reverse=True)
+    rank_map = {result[i]["planeta"]: r + 1 for r, i in enumerate(ranked)}
+    for item in result:
+        min_r = SHADBALA_MIN_RUPAS.get(item["planeta"], 5.0)
+        item["minimo_rupas"] = min_r
+        item["pct_minimo"] = round((item["rupas"] / min_r) * 100, 1)
+        item["rango"] = rank_map[item["planeta"]]
     return result
 
 
@@ -892,6 +912,45 @@ def _jaimini_karakas(planets: dict) -> dict:
     karakas = ["Atmakaraka (AK)", "Amatyakaraka (AMK)", "Bhratrikaraka (BK)",
                "Matrikaraka (MK)", "Putrakaraka (PK)", "Gnatikaraka (GK)", "Darakaraka (DK)"]
     return {k: ordered[i] for i, k in enumerate(karakas) if i < len(ordered)}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 11b. KARAKAMSHA · UPAPADA LAGNA
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _karakamsha(planets: dict, karakas: dict) -> dict:
+    """Karakamsha = navamsha sign of the Atmakaraka planet."""
+    ak = karakas.get("Atmakaraka (AK)")
+    if not ak or ak not in planets:
+        return {"planeta_ak": str(ak), "signo": "—", "signo_idx": -1}
+    d9_lon = _varga_lon(planets[ak]["lon"], 9)
+    sign = _sign(d9_lon)
+    return {"planeta_ak": ak, "signo": SIGNOS[sign]["nombre"], "signo_idx": sign}
+
+
+def _arudha_pada_sign(house_num: int, lagna_sign: int, planets: dict) -> int:
+    """Arudha Pada sign for a given house number (1-12, Whole Sign, Parashara rules)."""
+    house_sign = (lagna_sign + house_num - 1) % 12
+    lord = SIGNOS[house_sign]["reg"]
+    lord_sign = planets[lord]["signo_idx"]
+    n = (lord_sign - house_sign) % 12 + 1
+    arudha = (lord_sign + n - 1) % 12
+    if arudha == house_sign:
+        arudha = (house_sign + 9) % 12      # 10th from bhava
+    elif arudha == (house_sign + 6) % 12:
+        arudha = (house_sign + 3) % 12      # 4th from bhava
+    return arudha
+
+
+def _upapada_lagna(lagna_sign: int, planets: dict) -> dict:
+    """Upapada Lagna = Arudha Pada of the 12th house (Jaimini)."""
+    sign_idx = _arudha_pada_sign(12, lagna_sign, planets)
+    h12_lord = SIGNOS[(lagna_sign + 11) % 12]["reg"]
+    return {
+        "signo": SIGNOS[sign_idx]["nombre"],
+        "signo_idx": sign_idx,
+        "lord_casa12": h12_lord,
+    }
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -997,11 +1056,25 @@ def _bhava_sripati(asc_lon: float, mc_lon: float) -> list[dict]:
     cusps[7]  = (cusps[1]  + 180) % 360
     cusps[8]  = (cusps[2]  + 180) % 360
 
-    return [
-        {"casa": i + 1, "cusp": _fmt(cusps[i]), "signo": SIGNOS[_sign(cusps[i])]["nombre"]}
-        for i in range(12)
-        if cusps[i] is not None
-    ]
+    result = []
+    for i in range(12):
+        if cusps[i] is None:
+            continue
+        c_lon = cusps[i]
+        sign = _sign(c_lon)
+        lord = SIGNOS[sign]["reg"]
+        next_lon = cusps[(i + 1) % 12]
+        diff = (next_lon - c_lon + 360) % 360
+        sandhi_lon = (c_lon + diff / 2) % 360
+        result.append({
+            "casa": i + 1,
+            "cusp": _fmt(c_lon),
+            "cusp_lon": round(c_lon, 4),
+            "signo": SIGNOS[sign]["nombre"],
+            "lord": lord,
+            "sandhi": _fmt(sandhi_lon),
+        })
+    return result
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1163,6 +1236,8 @@ def get_birth_data(nombre: str, fecha: str, hora: str, ciudad: str) -> dict:
 
     # ── Jaimini Karakas ───────────────────────────────────────────────────
     karakas = _jaimini_karakas(planets)
+    karakamsha = _karakamsha(planets, karakas)
+    upapada = _upapada_lagna(lagna_sign, planets)
 
     # ── Doshas Ayurvédicos ────────────────────────────────────────────────
     doshas = _doshas_ayurvedicos(planets)
@@ -1201,6 +1276,8 @@ def get_birth_data(nombre: str, fecha: str, hora: str, ciudad: str) -> dict:
         "shad_bala": shad_bala,
         "ashtakavarga": ashtak,
         "karakas_jaimini": karakas,
+        "karakamsha": karakamsha,
+        "upapada_lagna": upapada,
         "doshas_ayurvedicos": doshas,
         "moon_chart": moon_chart,
         "bhava_sripati": bhava,

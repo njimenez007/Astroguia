@@ -233,6 +233,25 @@ async def compatibilidad_completa(req: CompatibilidadRequest) -> StreamingRespon
     )
 
 
+class BirthDataRequest(BaseModel):
+    nombre: str
+    fecha: str
+    hora: str
+    ciudad: str
+
+
+@app.post("/api/birth-data")
+async def birth_data(req: BirthDataRequest):
+    """Retorna el JSON completo de datos natales (sin streaming) para renderizar gráficas."""
+    try:
+        data = await asyncio.to_thread(
+            get_birth_data, req.nombre, req.fecha, req.hora, req.ciudad
+        )
+    except Exception as ex:
+        raise HTTPException(status_code=500, detail=f"Error calculando carta: {ex}")
+    return data
+
+
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "AstroGuía API"}
