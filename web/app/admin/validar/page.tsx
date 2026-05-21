@@ -24,12 +24,16 @@ interface ShadbalaRow {
 interface BhavaRow {
   casa: number; cusp: string; cusp_lon: number; signo: string; lord: string; sandhi: string
 }
+interface KarakaDetalle {
+  karaka: string; abr: string; planeta: string; signo: string; deg_en_signo: number
+}
 interface BirthData {
   nombre: string
   nacimiento: { fecha: string; hora: string; ciudad: string; ayanamsa_lahiri: number }
   d1: D1
   shad_bala: ShadbalaRow[]
   karakas_jaimini: Record<string, string>
+  karakas_jaimini_detalle: KarakaDetalle[]
   karakamsha: { planeta_ak: string; signo: string }
   upapada_lagna: { signo: string; lord_casa12: string }
   bhava_sripati: BhavaRow[]
@@ -260,8 +264,8 @@ function ShadbalaTable({ data }: { data: ShadbalaRow[] }) {
 
 // ─── Jaimini Table ────────────────────────────────────────────────────────────
 
-function JaiminiTable({ karakas, karakamsha, upapada }: {
-  karakas: Record<string, string>
+function JaiminiTable({ detalle, karakamsha, upapada }: {
+  detalle: KarakaDetalle[]
   karakamsha: { planeta_ak: string; signo: string }
   upapada: { signo: string; lord_casa12: string }
 }) {
@@ -279,14 +283,18 @@ function JaiminiTable({ karakas, karakamsha, upapada }: {
               <th className={TH}>Karaka</th>
               <th className={TH}>Abr.</th>
               <th className={TH}>Planeta</th>
+              <th className={TH + ' text-right'}>Signo</th>
+              <th className={TH + ' text-right'}>Grado</th>
             </tr>
           </thead>
           <tbody>
-            {Object.entries(karakas).map(([role, planet], i) => (
-              <tr key={role} className={`border-b border-white/[0.04] ${i % 2 === 0 ? '' : 'bg-white/[0.015]'}`}>
-                <td className={TD + ' text-white/40 text-xs'}>{role.split('(')[0].trim()}</td>
-                <td className={TD + ' font-cinzel text-[10px] text-gold-DEFAULT/55'}>{KARAKA_ABBR[role] ?? ''}</td>
-                <td className={TD + ' text-white/80'}>{planet}</td>
+            {detalle.map((row, i) => (
+              <tr key={row.karaka} className={`border-b border-white/[0.04] ${i % 2 === 0 ? '' : 'bg-white/[0.015]'}`}>
+                <td className={TD + ' text-white/40 text-xs'}>{row.karaka.split('(')[0].trim()}</td>
+                <td className={TD + ' font-cinzel text-[10px] text-gold-DEFAULT/55'}>{row.abr}</td>
+                <td className={TD + ' text-white/80'}>{row.planeta}</td>
+                <td className={TD + ' text-right text-white/45 text-xs'}>{row.signo}</td>
+                <td className={TD + ' text-right font-mono text-xs text-white/55'}>{row.deg_en_signo.toFixed(2)}°</td>
               </tr>
             ))}
           </tbody>
@@ -538,7 +546,7 @@ export default function ValidarPage() {
             {/* III — Sistema Jaimini */}
             <Section roman="III" title="Sistema Jaimini" tagline="Chara Karakas · Karakamsha · Upapada Lagna">
               <JaiminiTable
-                karakas={data.karakas_jaimini}
+                detalle={data.karakas_jaimini_detalle}
                 karakamsha={data.karakamsha}
                 upapada={data.upapada_lagna}
               />

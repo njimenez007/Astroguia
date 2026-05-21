@@ -411,7 +411,7 @@ def _all_planets(dt_utc: datetime, ayanamsa: float, lat: float, lon: float) -> d
             "signo_idx": s,
             "grado": _fmt(sid),
             "deg_en_signo": round(_deg_in_sign(sid), 4),
-            "retrograde": True,
+            "retrograde": False,   # Rahu/Ketu son siempre retrógrados por naturaleza pero no se marcan así
             "speed_dia": -0.053,
             "dignidad": "—",
             "nakshatra": _nakshatra_info(sid),
@@ -902,16 +902,33 @@ def _ashtakavarga(planets: dict) -> dict:
 # 11. JAIMINI CHARA KARAKAS (7 planetas — sin nodos)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _jaimini_karakas(planets: dict) -> dict:
-    """7 Karakas según Jaimini (excluye Rahu/Ketu)."""
-    ordered = sorted(
-        PLANET_NAMES,
-        key=lambda n: planets[n]["deg_en_signo"],
-        reverse=True,
-    )
-    karakas = ["Atmakaraka (AK)", "Amatyakaraka (AMK)", "Bhratrikaraka (BK)",
-               "Matrikaraka (MK)", "Putrakaraka (PK)", "Gnatikaraka (GK)", "Darakaraka (DK)"]
-    return {k: ordered[i] for i, k in enumerate(karakas) if i < len(ordered)}
+def _jaimini_karakas(planets: dict) -> tuple[dict, list]:
+    """7 Karakas según Jaimini (excluye Rahu/Ketu).
+    Retorna (simple_dict, detalle_list) para compatibilidad con prompts y UI."""
+    ordered = sorted(PLANET_NAMES, key=lambda n: planets[n]["deg_en_signo"], reverse=True)
+    karaka_defs = [
+        ("Atmakaraka (AK)",    "AK"),
+        ("Amatyakaraka (AMK)", "AMK"),
+        ("Bhratrikaraka (BK)", "BK"),
+        ("Matrikaraka (MK)",   "MK"),
+        ("Putrakaraka (PK)",   "PK"),
+        ("Gnatikaraka (GK)",   "GK"),
+        ("Darakaraka (DK)",    "DK"),
+    ]
+    simple:  dict = {}
+    detalle: list = []
+    for i, (karaka, abr) in enumerate(karaka_defs):
+        if i < len(ordered):
+            p = ordered[i]
+            simple[karaka] = p
+            detalle.append({
+                "karaka": karaka,
+                "abr": abr,
+                "planeta": p,
+                "signo": planets[p]["signo"],
+                "deg_en_signo": round(planets[p]["deg_en_signo"], 2),
+            })
+    return simple, detalle
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1235,7 +1252,7 @@ def get_birth_data(nombre: str, fecha: str, hora: str, ciudad: str) -> dict:
     ashtak = _ashtakavarga(planets)
 
     # ── Jaimini Karakas ───────────────────────────────────────────────────
-    karakas = _jaimini_karakas(planets)
+    karakas, karakas_detalle = _jaimini_karakas(planets)
     karakamsha = _karakamsha(planets, karakas)
     upapada = _upapada_lagna(lagna_sign, planets)
 
@@ -1276,6 +1293,7 @@ def get_birth_data(nombre: str, fecha: str, hora: str, ciudad: str) -> dict:
         "shad_bala": shad_bala,
         "ashtakavarga": ashtak,
         "karakas_jaimini": karakas,
+        "karakas_jaimini_detalle": karakas_detalle,
         "karakamsha": karakamsha,
         "upapada_lagna": upapada,
         "doshas_ayurvedicos": doshas,
