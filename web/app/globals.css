@@ -164,3 +164,62 @@ input:focus {
 .btn-gold:active {
   transform: scale(0.97);
 }
+
+/* ── Print / PDF ─────────────────────────────────────────────────────────── */
+@media print {
+  .stars-bg { display: none !important; }
+  .print\:hidden { display: none !important; }
+
+  body {
+    background: #ffffff !important;
+    color: #1a1a1a !important;
+  }
+
+  /* Cards become plain white boxes */
+  .mystic-card {
+    background: transparent !important;
+    border-color: #e0e0e0 !important;
+    box-shadow: none !important;
+  }
+
+  /* Gold text becomes dark gold for print legibility */
+  .gold-text, .text-gold-DEFAULT {
+    color: #8b6914 !important;
+    -webkit-text-fill-color: #8b6914 !important;
+  }
+
+  /* White text → dark */
+  .text-white\/80, .text-white\/82, .text-white\/75, .text-white\/78,
+  .text-white\/70, .text-white\/60, .text-white\/55, .text-white\/50 {
+    color: #2a2a2a !important;
+  }
+  .text-white\/35, .text-white\/30, .text-white\/25 {
+    color: #555555 !important;
+  }
+  .text-white\/22, .text-white\/20, .text-white\/18 {
+    color: #888888 !important;
+  }
+
+  /* Chapter text colors for print */
+  .text-gold-DEFAULT { color: #8b6914 !important; }
+  .text-violet-400  { color: #6d28d9 !important; }
+  .text-cyan-400    { color: #0e7490 !important; }
+  .text-amber-400   { color: #92400e !important; }
+  .text-rose-400    { color: #9f1239 !important; }
+
+  /* Gold divider → thin line */
+  .gold-divider {
+    background: #c8a84b !important;
+    opacity: 0.4;
+  }
+
+  /* Page breaks between chapters */
+  [id^="bloque-"] {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Ensure tables print cleanly */
+  table { border-collapse: collapse; }
+  th, td { border: 1px solid #ddd !important; }
+}

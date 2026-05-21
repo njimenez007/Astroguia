@@ -24,6 +24,8 @@ const BLOCK_TITLES = [
   'Los 8 Pilares del Destino',
 ]
 
+const CHAPTER_ROMANS = ['I', 'II', 'III', 'IV', 'V']
+
 const INIT_BLOCKS: BlockState[] = BLOCK_TITLES.map((titulo) => ({
   titulo,
   texto: '',
@@ -36,11 +38,26 @@ const API_URL =
 
 type Screen = 'form' | 'carta' | 'error'
 
+function formatFecha(fechaISO: string) {
+  if (!fechaISO) return ''
+  try {
+    const [y, m, d] = fechaISO.split('-').map(Number)
+    const meses = [
+      'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+      'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+    ]
+    return `${d} de ${meses[m - 1]} de ${y}`
+  } catch {
+    return fechaISO
+  }
+}
+
 export default function CartaPage() {
   const [screen, setScreen] = useState<Screen>('form')
   const [form, setForm] = useState<FormData>({ nombre: '', fecha: '', hora: '', ciudad: '' })
   const [blocks, setBlocks] = useState<BlockState[]>(INIT_BLOCKS)
   const [nombre, setNombre] = useState('')
+  const [savedForm, setSavedForm] = useState<FormData | null>(null)
   const [completo, setCompleto] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [currentBlock, setCurrentBlock] = useState(0)
@@ -60,6 +77,7 @@ export default function CartaPage() {
     abortRef.current = ctrl
 
     setNombre(form.nombre)
+    setSavedForm({ ...form })
     setBlocks(INIT_BLOCKS)
     setCompleto(false)
     setError(null)
@@ -108,7 +126,6 @@ export default function CartaPage() {
               estado: 'generando',
               texto: '',
             })
-            // Mark previous blocks done if not already
             for (let i = 1; i < num; i++) {
               setBlocks((prev) =>
                 prev.map((b, idx) =>
@@ -146,23 +163,28 @@ export default function CartaPage() {
         <div className="stars-bg" />
         <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-16">
           <div className="w-full max-w-md">
+
             {/* Header */}
-            <div className="text-center mb-10">
-              <p className="font-cinzel text-[11px] tracking-[0.45em] text-gold-DEFAULT/50 uppercase mb-3">
+            <div className="text-center mb-10 animate-fade-in">
+              <div className="text-2xl mb-4 tracking-widest text-gold-DEFAULT/45 select-none">
+                ☽ · ✦ · ☾
+              </div>
+              <p className="font-cinzel text-[10px] tracking-[0.5em] text-gold-DEFAULT/40 uppercase mb-3">
                 AstroGuía · Jyotish
               </p>
               <h1 className="font-cinzel text-3xl gold-text tracking-wide mb-3">
                 Carta Astral Védica
               </h1>
-              <p className="font-garamond text-white/50 text-lg">
+              <p className="font-garamond text-white/45 text-lg">
                 Tu manual de identidad escrito en el idioma de las estrellas.
               </p>
+              <div className="gold-divider mt-6" />
             </div>
 
             {/* Form card */}
-            <div className="mystic-card rounded-2xl p-8 space-y-5">
+            <div className="mystic-card rounded-2xl p-8 space-y-5 border border-gold-DEFAULT/15">
               <div>
-                <label className="block font-cinzel text-[10px] tracking-[0.3em] text-white/40 uppercase mb-2">
+                <label className="block font-cinzel text-[10px] tracking-[0.35em] text-white/35 uppercase mb-2">
                   Nombre completo
                 </label>
                 <input
@@ -170,37 +192,37 @@ export default function CartaPage() {
                   placeholder="Tu nombre"
                   value={form.nombre}
                   onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
-                  className="w-full bg-white/[0.06] border border-white/10 rounded-xl px-4 py-3 text-white font-garamond text-base placeholder-white/25 focus:border-gold-DEFAULT/40 transition-colors"
+                  className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-3 text-white font-garamond text-base placeholder-white/22 focus:border-gold-DEFAULT/40 transition-colors outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-cinzel text-[10px] tracking-[0.3em] text-white/40 uppercase mb-2">
+                  <label className="block font-cinzel text-[10px] tracking-[0.35em] text-white/35 uppercase mb-2">
                     Fecha de nacimiento
                   </label>
                   <input
                     type="date"
                     value={form.fecha}
                     onChange={(e) => setForm((f) => ({ ...f, fecha: e.target.value }))}
-                    className="w-full bg-white/[0.06] border border-white/10 rounded-xl px-4 py-3 text-white font-garamond text-base focus:border-gold-DEFAULT/40 transition-colors"
+                    className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-3 text-white font-garamond text-base focus:border-gold-DEFAULT/40 transition-colors outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block font-cinzel text-[10px] tracking-[0.3em] text-white/40 uppercase mb-2">
+                  <label className="block font-cinzel text-[10px] tracking-[0.35em] text-white/35 uppercase mb-2">
                     Hora de nacimiento
                   </label>
                   <input
                     type="time"
                     value={form.hora}
                     onChange={(e) => setForm((f) => ({ ...f, hora: e.target.value }))}
-                    className="w-full bg-white/[0.06] border border-white/10 rounded-xl px-4 py-3 text-white font-garamond text-base focus:border-gold-DEFAULT/40 transition-colors"
+                    className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-3 text-white font-garamond text-base focus:border-gold-DEFAULT/40 transition-colors outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-cinzel text-[10px] tracking-[0.3em] text-white/40 uppercase mb-2">
+                <label className="block font-cinzel text-[10px] tracking-[0.35em] text-white/35 uppercase mb-2">
                   Ciudad de nacimiento
                 </label>
                 <input
@@ -208,7 +230,7 @@ export default function CartaPage() {
                   placeholder="Ciudad, País"
                   value={form.ciudad}
                   onChange={(e) => setForm((f) => ({ ...f, ciudad: e.target.value }))}
-                  className="w-full bg-white/[0.06] border border-white/10 rounded-xl px-4 py-3 text-white font-garamond text-base placeholder-white/25 focus:border-gold-DEFAULT/40 transition-colors"
+                  className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-3 text-white font-garamond text-base placeholder-white/22 focus:border-gold-DEFAULT/40 transition-colors outline-none"
                 />
               </div>
 
@@ -221,7 +243,7 @@ export default function CartaPage() {
               </button>
             </div>
 
-            <p className="text-center text-white/20 font-garamond text-sm mt-6">
+            <p className="text-center text-white/20 font-garamond text-sm mt-8">
               Astrología Védica · Jyotish · Sistema Parashara
             </p>
           </div>
@@ -250,81 +272,91 @@ export default function CartaPage() {
   }
 
   // ── CARTA (generando + completa) ──────────────────────────────────────────
-  const blocksCompletos = blocks.filter((b) => b.estado === 'completo').length
-
   return (
     <div className="relative min-h-screen">
       <div className="stars-bg" />
 
       {/* Sticky top bar */}
-      <div className="sticky top-0 z-50 bg-mystic-900/90 backdrop-blur-md border-b border-white/[0.07]">
+      <div className="sticky top-0 z-50 bg-mystic-900/92 backdrop-blur-md border-b border-white/[0.06]">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-4">
           <button
             onClick={() => { abortRef.current?.abort(); setScreen('form') }}
-            className="font-cinzel text-[10px] tracking-[0.3em] text-white/30 hover:text-gold-DEFAULT/70 uppercase transition-colors"
+            className="font-cinzel text-[10px] tracking-[0.3em] text-white/50 hover:text-gold-DEFAULT transition-colors border border-white/12 hover:border-gold-DEFAULT/35 px-3 py-1.5 rounded-full"
           >
-            ← Volver
+            ← Inicio
           </button>
-          <span className="font-cinzel text-[10px] tracking-[0.35em] text-gold-DEFAULT/40 uppercase flex-1 text-center">
-            AstroGuía · Carta Astral
+
+          <span className="font-cinzel text-[9px] tracking-[0.4em] text-gold-DEFAULT/35 uppercase flex-1 text-center truncate">
+            Carta Astral · {nombre}
           </span>
-          {/* Progress dots */}
-          <div className="flex items-center gap-1.5">
+
+          {/* Chapter progress — Roman numerals */}
+          <div className="flex items-center gap-2.5">
             {blocks.map((b, i) => (
               <button
                 key={i}
-                onClick={() => {
+                onClick={() =>
                   document.getElementById(`bloque-${i + 1}`)?.scrollIntoView({ behavior: 'smooth' })
-                }}
+                }
                 title={b.titulo}
-                className={`w-2 h-2 rounded-full transition-all ${
+                className={`font-cinzel text-[9px] tracking-widest transition-all duration-300 ${
                   b.estado === 'completo'
-                    ? 'bg-gold-DEFAULT'
+                    ? 'text-gold-DEFAULT'
                     : b.estado === 'generando'
-                    ? 'bg-gold-DEFAULT/50 animate-pulse'
-                    : 'bg-white/15'
+                    ? 'text-gold-DEFAULT/50 animate-pulse'
+                    : 'text-white/18'
                 }`}
-              />
+              >
+                {CHAPTER_ROMANS[i]}
+              </button>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="relative z-10 max-w-4xl mx-auto px-4 py-10">
+      <div className="relative z-10 max-w-4xl mx-auto px-4 py-12">
 
-        {/* Header cliente */}
-        <div className="text-center mb-12">
-          <p className="font-cinzel text-[10px] tracking-[0.45em] text-gold-DEFAULT/40 uppercase mb-4">
+        {/* Cover header */}
+        <div className="text-center mb-16 animate-fade-in">
+          <div className="text-2xl mb-5 tracking-widest text-gold-DEFAULT/40 select-none">
+            ☽ · ✦ · ☾
+          </div>
+          <p className="font-cinzel text-[10px] tracking-[0.55em] text-gold-DEFAULT/38 uppercase mb-4">
             Lectura de Primera Cita · Jyotish
           </p>
-          <h1 className="font-cinzel text-3xl md:text-4xl gold-text tracking-wide mb-2">
+          <h1 className="font-cinzel text-4xl md:text-5xl gold-text tracking-wide mb-3">
             {nombre}
           </h1>
-          <p className="font-garamond text-white/40 text-lg">
-            {form.fecha} &nbsp;·&nbsp; {form.hora} &nbsp;·&nbsp; {form.ciudad}
-          </p>
+
+          {savedForm && (
+            <p className="font-garamond text-white/35 text-base">
+              {formatFecha(savedForm.fecha)}
+              {savedForm.hora && <>&nbsp;·&nbsp;{savedForm.hora}</>}
+              {savedForm.ciudad && <>&nbsp;·&nbsp;{savedForm.ciudad}</>}
+            </p>
+          )}
+
+          <div className="gold-divider mt-8 mb-8" />
 
           {completo ? (
-            <div className="mt-6 inline-flex items-center gap-2 bg-gold-DEFAULT/10 border border-gold-DEFAULT/25 rounded-full px-5 py-2">
+            <div className="inline-flex items-center gap-2.5 bg-gold-DEFAULT/8 border border-gold-DEFAULT/20 rounded-full px-6 py-2.5">
               <span className="text-gold-DEFAULT text-xs">✦</span>
-              <span className="font-cinzel text-[10px] tracking-[0.35em] text-gold-DEFAULT uppercase">
+              <span className="font-cinzel text-[10px] tracking-[0.4em] text-gold-DEFAULT uppercase">
                 Lectura Completa
               </span>
               <span className="text-gold-DEFAULT text-xs">✦</span>
             </div>
           ) : (
-            <div className="mt-6 inline-flex items-center gap-2">
-              <span className="font-garamond text-white/35 text-base">
-                Generando bloque {currentBlock} de 5
+            <div className="inline-flex items-center gap-2.5">
+              <span className="font-garamond text-white/30 text-base">
+                Generando capítulo {CHAPTER_ROMANS[currentBlock - 1] ?? '—'} de V
               </span>
-              <span className="inline-block w-1 h-4 bg-gold-DEFAULT/50 animate-pulse rounded" />
+              <span className="inline-block w-0.5 h-4 bg-gold-DEFAULT/45 animate-pulse rounded" />
             </div>
           )}
-
-          <div className="gold-divider mt-8" />
         </div>
 
-        {/* Bloques */}
+        {/* Chapters */}
         {blocks.map((b, i) => (
           <BloqueCard
             key={i}
@@ -335,16 +367,27 @@ export default function CartaPage() {
           />
         ))}
 
-        {/* Footer de la lectura */}
+        {/* Footer */}
         {completo && (
-          <div className="text-center mt-8 mb-16">
+          <div className="text-center mt-4 mb-16">
             <div className="gold-divider mb-8" />
-            <p className="font-cinzel text-[10px] tracking-[0.4em] text-gold-DEFAULT/40 uppercase mb-2">
-              ✦ &nbsp; Fin de la Lectura &nbsp; ✦
+            <div className="text-2xl mb-4 tracking-widest text-gold-DEFAULT/30 select-none">
+              ☽ · ✦ · ☾
+            </div>
+            <p className="font-cinzel text-[9px] tracking-[0.5em] text-gold-DEFAULT/35 uppercase mb-3">
+              Fin de la Lectura de Primera Cita
             </p>
-            <p className="font-garamond text-white/30 text-base">
+            <p className="font-garamond text-white/25 text-base">
               Dario Jiménez Medina · Jyotish · Bogotá, Colombia
             </p>
+            <div className="mt-8">
+              <button
+                onClick={() => setScreen('form')}
+                className="font-cinzel text-[10px] tracking-[0.3em] text-white/35 hover:text-gold-DEFAULT transition-colors border border-white/10 hover:border-gold-DEFAULT/35 px-5 py-2.5 rounded-full"
+              >
+                ← Nueva lectura
+              </button>
+            </div>
           </div>
         )}
       </div>

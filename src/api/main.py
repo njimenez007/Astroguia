@@ -16,6 +16,8 @@ from src.api.engine import get_birth_data
 from src.api.claude_hook import stream_hook
 from src.api.claude_carta import generate_carta_astral
 from src.api.claude_pregunta import stream_pregunta
+from src.api.claude_predicciones import generate_predicciones
+from src.api.claude_compatibilidad import generate_compatibilidad
 
 app = FastAPI(title="AstroGuía API", version="0.1.0")
 
@@ -152,6 +154,73 @@ async def pregunta(req: PreguntaRequest) -> StreamingResponse:
             req.pregunta, req.tipo, birth_data, req.nombre,
             birth_data2, req.pareja_nombre,
         ),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
+
+
+class PrediccionesRequest(BaseModel):
+    nombre: str
+    fecha: str
+    hora: str
+    ciudad: str
+
+
+@app.post("/api/predicciones")
+async def predicciones(req: PrediccionesRequest) -> StreamingResponse:
+    """Genera la Lectura de Predicciones (Sade Sati + Dashas) — 5 bloques vía SSE."""
+    try:
+        birth_data = await asyncio.to_thread(
+            get_birth_data, req.nombre, req.fecha, req.hora, req.ciudad
+        )
+    except Exception as ex:
+        raise HTTPException(status_code=500, detail=f"Error calculando carta: {ex}")
+
+    return StreamingResponse(
+        generate_predicciones(birth_data, req.nombre),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
+
+
+class CompatibilidadRequest(BaseModel):
+    nombre: str
+    fecha: str
+    hora: str
+    ciudad: str
+    pareja_nombre: str
+    pareja_fecha: str
+    pareja_hora: str
+    pareja_ciudad: str
+
+
+@app.post("/api/compatibilidad-completa")
+async def compatibilidad_completa(req: CompatibilidadRequest) -> StreamingResponse:
+    """Genera la Lectura de Compatibilidad (Kundali Matching) — 5 bloques vía SSE."""
+    try:
+        birth_data1 = await asyncio.to_thread(
+            get_birth_data, req.nombre, req.fecha, req.hora, req.ciudad
+        )
+    except Exception as ex:
+        raise HTTPException(status_code=500, detail=f"Error calculando carta de persona 1: {ex}")
+
+    try:
+        birth_data2 = await asyncio.to_thread(
+            get_birth_data, req.pareja_nombre, req.pareja_fecha, req.pareja_hora, req.pareja_ciudad
+        )
+    except Exception as ex:
+        raise HTTPException(status_code=500, detail=f"Error calculando carta de persona 2: {ex}")
+
+    return StreamingResponse(
+        generate_compatibilidad(birth_data1, req.nombre, birth_data2, req.pareja_nombre),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
